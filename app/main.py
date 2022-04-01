@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import Body, FastAPI, Response, status, HTTPException, Depends
 from pydantic import BaseModel
 from random import randrange
@@ -49,7 +49,7 @@ while True:
 async def root():
     return {'message':'Hello world'}            
 
-@app.get('/posts')
+@app.get('/posts', response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     # cursor.execute('SELECT * FROM posts')
     # posts = cursor.fetchall()
@@ -69,7 +69,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     return new_post
 
-@app.get('/posts/{id}')
+@app.get('/posts/{id}', response_model=schemas.Post)
 def get_post(id: int, db: Session = Depends(get_db)):
     # cursor.execute("""SELECT * FROM posts WHERE id = %s """, (str(id), ))  #remember if you miss that comma at the end after "(str(id)", you will get error if you pass double digit id
     # post = cursor.fetchone()
@@ -94,7 +94,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@app.put('/posts/{id}')
+@app.put('/posts/{id}', response_model=schemas.Post) 
 def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     # cursor.execute("""UPDATE posts SET title = %s, content = %s, published = %s WHERE id=%s RETURNING *""", (post.title, post.content, post.published, str(id) ))
@@ -112,4 +112,12 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
 
     return post_query.first()
 
+#creating users
+@app.post("/users", status_code = status.HTTP_201_CREATED, response_model=schemas.UserOut)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
 
+    return new_user
